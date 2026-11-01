@@ -1,0 +1,122 @@
+{
+  "title": "我的导航",
+  "open": "self",
+  "favicons": true,
+  "groups": [
+    {
+      "id": "nas",
+      "name": "内网服务",
+      "icon": "🏠",
+      "order": 1,
+      "items": [
+        {
+          "name": "群晖",
+          "url": "http://192.168.1.10:5000",
+          "description": "NAS 管理",
+          "icon": "💾",
+          "order": 1
+        },
+        {
+          "name": "Jellyfin",
+          "url": "http://192.168.1.10:8096",
+          "description": "媒体库",
+          "icon": "🍿",
+          "order": 2
+        }
+      ]
+    },
+    {
+      "id": "dev",
+      "name": "开发",
+      "icon": "💻",
+      "order": 2,
+      "items": [
+        {
+          "name": "GitHub",
+          "url": "https://github.com",
+          "description": "代码托管",
+          "icon": "🐙",
+          "order": 1
+        },
+        {
+          "name": "MDN",
+          "url": "https://developer.mozilla.org",
+          "description": "Web 文档",
+          "icon": "📘",
+          "order": 2
+        },
+        {
+          "name": "Go 文档",
+          "url": "https://pkg.go.dev",
+          "description": "标准库参考",
+          "icon": "🐹",
+          "order": 3
+        },
+        {
+          "name": "内部后台",
+          "url": "https://example.com",
+          "description": "暂时隐藏",
+          "icon": "🔒",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "name": "常用工具",
+      "icon": "🧰",
+      "order": 3,
+      "items": [
+        {
+          "name": "Excalidraw",
+          "url": "https://excalidraw.com",
+          "description": "手绘白板",
+          "icon": "✏️",
+          "order": 1
+        },
+        {
+          "name": "Squoosh",
+          "url": "https://squoosh.app",
+          "description": "图片压缩",
+          "icon": "🗜️",
+          "order": 2
+        },
+        {
+          "name": "正则测试",
+          "url": "https://regex101.com",
+          "description": "在线调试正则",
+          "icon": "🔍",
+          "order": 3
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "影音",
+      "icon": "🎬",
+      "order": 4,
+      "items": [
+        {
+          "name": "哔哩哔哩",
+          "url": "https://www.bilibili.com",
+          "description": "视频站",
+          "icon": "📺",
+          "order": 1
+        },
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com",
+          "description": "视频站",
+          "icon": "▶️",
+          "order": 2
+        }
+      ]
+    }
+  ],
+  "scan": {
+    "hosts": [
+      "127.0.0.1"
+    ],
+    "ports": "80,443,3000,5000,6500-9999,32400"
+  }
+}

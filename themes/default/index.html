@@ -1,0 +1,121 @@
+{{- /* 一张卡片的结构只写这一处：普通分组和「发现的服务」都从这里生成。 */ -}}
+{{define "card"}}
+        {{- /* 名称和描述都只显示一行，完整的挂在整张卡片的 title 上，悬停在卡片哪里都看得到。 */}}
+        <a class="card" href="{{ .URL }}" title="{{ .Name }}{{ with .Description }}&#10;{{ . }}{{ end }}"{{ with .Target }} target="{{ . }}"{{ end }} rel="noopener noreferrer">
+          {{- /* 开了「显示网站图标」：有抓回来的就用它，没有就是地球；没开还是 emoji。
+               图标都是本站的 /icons/…，不直接引用书签网站 —— 见 internal/icon。 */}}
+          {{- if .IconSrc }}
+          <img class="card__icon card__icon--img" src="{{ .IconSrc }}" alt="" width="24" height="24" loading="lazy">
+          {{- else if .Favicons }}
+          <svg class="card__icon card__icon--svg" aria-hidden="true"><use href="#i-globe"/></svg>
+          {{- else }}
+          <span class="card__icon" aria-hidden="true">{{ if .Icon }}{{ .Icon }}{{ else }}🔗{{ end }}</span>
+          {{- end }}
+          <span class="card__text">
+            <span class="card__title">{{ .Name }}</span>
+            <span class="card__desc">{{ .Description }}</span>
+          </span>
+        </a>
+{{- end -}}
+
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ .Title }}</title>
+<!-- 深浅色必须在首次绘制前定好，否则深色模式下每次加载会闪一帧白屏。
+     所以这段是内联的、阻塞的，放在样式表之前；换成外部文件仍然会有间隙。
+     切换按钮的逻辑在 app.js，这里只管初始值。 -->
+<script>
+(() => {
+  let t = null
+  try { t = localStorage.getItem("theme") } catch { /* 隐私模式下忽略 */ }
+  document.documentElement.dataset.theme =
+    t ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+})()
+</script>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<!-- 默认的网站图标。用内联 SVG：跟着 currentColor 走，深浅色下都清楚。 -->
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+</svg>
+
+<aside class="side">
+  <!-- 站名是页面唯一的 h1，点它回到首页（第一个分组）。 -->
+  <h1 class="side__brand"><a href="/">{{ .Title }}</a></h1>
+  <nav aria-label="分组">
+    {{- range .Groups }}
+    <a class="side__link" href="/{{ .ID }}" data-group="{{ .ID }}"{{ if eq .ID $.Active }} aria-current="page"{{ end }}>
+      <span class="side__icon" aria-hidden="true">{{ if .Icon }}{{ .Icon }}{{ else }}📁{{ end }}</span>{{ .Name }}
+    </a>
+    {{- end }}
+    {{- with .Services }}
+    <a class="side__link side__link--svc" href="/{{ .ID }}" data-group="{{ .ID }}"{{ if eq .ID $.Active }} aria-current="page"{{ end }}>
+      <span class="side__icon" aria-hidden="true">📡</span>发现的服务
+    </a>
+    {{- end }}
+  </nav>
+</aside>
+
+<div class="content">
+  <header class="top">
+    <search class="search">
+      {{- /* 任意键都会聚焦到这里（见 app.js），所以不再需要 / 的提示角标。 */}}
+      <input id="search" type="search" aria-label="搜索书签" placeholder="直接打字搜索，回车打开第一条" autocomplete="off">
+    </search>
+    <div id="clock" class="clock"></div>
+    <button id="theme" type="button" aria-label="切换深浅色">
+      <!-- 结构性图标用内联 SVG（继承 currentColor、两种主题下都清晰），
+           不用字符或 emoji —— 它们的字形和大小随系统字体变。 -->
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </header>
+
+  <main>
+    {{- range .Groups }}
+    <section class="group" data-group="{{ .ID }}">
+      <h2 class="group__title">{{ .Name }}</h2>
+      <div class="cards">
+        {{- range .Items }}{{ template "card" . }}{{ end }}
+      </div>
+      {{- if not .Items }}
+      <p class="group__empty">这个分组还没有书签（或者全被设成了隐藏），去编辑页 /admin 添加。</p>
+      {{- end }}
+    </section>
+    {{- end }}
+    {{- /* 发现的服务：结果是服务端内存里缓存的那一份，启动时先看过本机，点「刷新」才重扫（见 app.js）。 */}}
+    {{- with .Services }}
+    <section class="group svc" data-group="{{ .ID }}"{{ if .Running }} data-running{{ end }}>
+      <div class="svc__head">
+        <h2 class="group__title">发现的服务</h2>
+        <p class="svc__meta" role="status">
+          {{- if .Running }}正在扫描…
+          {{- else if .At }}{{ .At }} 扫描，用时 {{ .Took }}，{{ len .Items }} 个网页服务{{ if .Other }}，另有 {{ .Other }} 个端口不是网页{{ end }}
+          {{- else }}还没扫描过，点「刷新」扫一遍{{ end -}}
+        </p>
+        <button class="svc__refresh" type="button"{{ if .Running }} disabled{{ end }}>刷新</button>
+      </div>
+      {{- if .Stale }}
+      <p class="svc__note">扫描设置改过了，下面还是按旧设置扫出来的，点「刷新」重扫。</p>
+      {{- else if .Skipped }}
+      <p class="svc__note">启动时只看了本机和导航页节点，{{ .Skipped }} 还没扫，点「刷新」扫一遍。</p>
+      {{- end }}
+      <div class="cards">
+        {{- range .Items }}{{ template "card" . }}{{ end }}
+      </div>
+    </section>
+    {{- end }}
+    <!-- 文案由 app.js 写入：只有真正改动文本，role="status" 才会被读屏播报。 -->
+    <p class="empty" role="status"></p>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

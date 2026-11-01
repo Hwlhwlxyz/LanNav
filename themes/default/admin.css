@@ -1,0 +1,541 @@
+/* 编辑页专用样式。配色、焦点环、侧边栏、顶栏都复用 styles.css，
+   这里只补「一行一个书签」这套编辑控件。导航页不加载这个文件。 */
+
+/* 成功/失败两个语义色只有编辑页用得上，所以定义在这里，不去撑大 styles.css。
+   浅色下不能直接用 green-600 —— 它对页面底色只有 3.1:1，13px 的文字不够看。 */
+:root {
+  --ok: #15803d;    /* 对 --bg 4.7:1 */
+  --bad: #dc2626;   /* 对 --bg 4.5:1 */
+}
+
+[data-theme="dark"] {
+  --ok: #4ade80;    /* 对 --bg 10.6:1 */
+  --bad: #f87171;   /* 对 --bg 6.7:1 */
+}
+
+.i {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ——— 输入框统一外观 ——— */
+main input[type="text"], main input:not([type]), main input[type="url"], main select, .top select,
+.top input {
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+main input:focus-visible, .top input:focus-visible, main select:focus-visible, .top select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--accent);
+}
+
+/* 原生校验失败时自己就会标红，不另写一套提示 */
+main input:invalid:not(:placeholder-shown) { border-color: var(--bad); }
+
+/* ——— 顶栏 ——— */
+.f-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.f-title-wrap input { width: 200px; font-weight: 600; color: var(--text); }
+
+/* 状态是要读的反馈，用正文字号；说明、提示这类次要文字才用 12px。 */
+.status { margin: 0 auto 0 0; padding-left: 12px; color: var(--muted); font-size: 14px; }
+.status[data-kind="ok"] { color: var(--ok); }
+.status[data-kind="bad"] { color: var(--bad); }
+
+/* 有未保存改动时，保存按钮自己变成提示，不需要另外一个小红点 */
+body[data-dirty] #save::before { content: "● "; }
+
+.top button {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.top button:hover { border-color: var(--accent); }
+.top button:focus-visible { outline: none; box-shadow: var(--focus); }
+
+.top .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.top button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 深色下的强调色是浅蓝，白字压在上面只有 2.6:1，换成深色字（约 7:1） */
+[data-theme="dark"] :is(.top, .scan) .primary { color: #0b1220; }
+
+/* ——— 侧边栏 ——— */
+#nav .side__link { cursor: pointer; }
+.nav-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-count { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
+
+/* 和导航页的当前分组同一套：底色深一档加粗体，文字不变色 */
+.side__link.is-active {
+  background: var(--accent-soft-2);
+  font-weight: 600;
+}
+
+.side__back {
+  display: block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.side__back:hover { color: var(--accent); }
+
+.add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.add:hover { border-color: var(--accent); color: var(--accent); }
+.add:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* ——— 分组 ——— */
+.ed-group { display: none; }
+.ed-group.is-active { display: block; }
+
+/* ——— 发现的服务的设置面板 ———
+   跟分组一样靠 is-active 切换，复用分组头那条分隔线。 */
+.ed-panel { display: none; max-width: 640px; }
+.ed-panel.is-active { display: block; }
+.panel__title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; }
+.panel__title .i { color: var(--muted); }
+.panel__tip { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+.panel__field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-weight: 600; }
+.panel__hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+
+main textarea {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  resize: vertical;
+}
+
+main textarea:focus-visible { outline: none; box-shadow: var(--focus); border-color: var(--accent); }
+#svc-ports { font-family: var(--font-mono); font-weight: 400; }
+
+.ghead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.f-gicon, .f-icon { width: 44px; text-align: center; }
+.f-gname { width: 160px; font-weight: 600; }
+.f-gid { width: 110px; font-family: var(--font-mono); }
+
+.f-gid-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.f-hide {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ghead .ops { margin-left: auto; }
+
+/* ——— 书签行 ——— */
+.rows { margin: 0; padding: 0; list-style: none; }
+
+/* 行与行之间几乎不留缝，靠悬停底色认出「我在改哪一行」，
+   左右各让出 4px 给底色，内容的对齐线不变。 */
+.row {
+  display: grid;
+  grid-template-columns: 44px minmax(120px, 1.1fr) minmax(170px, 1.8fr) minmax(120px, 1.2fr) max-content max-content max-content;
+  gap: 6px;
+  align-items: center;
+  margin: 0 -4px;
+  padding: 2px 4px;
+  border-radius: var(--radius);   /* 里面的输入框是 8，加 2px 内边距，外圈 10 才同心 */
+}
+
+.row:hover, .row:focus-within { background: var(--accent-soft); }
+
+.ops { display: flex; gap: 2px; }
+
+/* 图标按钮跟输入框一样高，一行里的东西上下对齐，鼠标也不用瞄准更小的目标 */
+.ico {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ico:hover { border-color: var(--line); color: var(--text); background: var(--panel); }
+.ico.del:hover, .ico.gdel:hover { color: var(--bad); border-color: var(--bad); }
+.ico:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* ——— 窄屏：一行拆成多行，输入框各占满一行 ——— */
+@media (max-width: 900px) {
+  /* 一条书签排成三行：图标 名称 操作 / 链接 / 描述 打开方式 隐藏。
+     原来每个输入框各占一行要六行，一屏看不到两条。 */
+  .row {
+    grid-template-columns: 44px 1fr max-content max-content;
+    grid-template-areas:
+      "icon name name ops"
+      "url  url  url  url"
+      "desc desc open hide";
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .row .f-icon { grid-area: icon; }
+  .row .f-name { grid-area: name; }
+  .row .f-url  { grid-area: url; }
+  .row .f-desc { grid-area: desc; }
+  .row .f-open { grid-area: open; }
+  .row .f-hide { grid-area: hide; }
+  .row .ops    { grid-area: ops; }
+  .top { flex-wrap: wrap; }
+  .f-title-wrap input { width: 140px; }
+  .status { width: 100%; padding-left: 0; }
+}
+
+/* ——— 扫描对话框 ———
+   原生 <dialog>：遮罩、焦点圈住、Esc 关闭都是浏览器给的，这里只管外观。 */
+.scan {
+  width: min(760px, 92vw);
+  max-height: 85dvh;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.scan[open] { display: flex; flex-direction: column; }
+.scan::backdrop { background: rgb(0 0 0 / .45); }
+
+.scan__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scan__head h2 { margin: 0; font-size: 16px; }
+.scan__head .ico { margin-left: auto; }
+
+.scan__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 0;
+}
+
+.scan__bar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.scan__ports { flex: 1; min-width: 240px; }
+
+.scan input[type="text"], .scan input:not([type]) {
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+.scan input:focus-visible { outline: none; box-shadow: var(--focus); border-color: var(--accent); }
+#scan-host { width: 160px; }
+#scan-ports { width: 100%; font-family: var(--font-mono); font-size: 12px; }
+
+.scan button {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.scan button:hover { border-color: var(--accent); }
+.scan button:focus-visible { outline: none; box-shadow: var(--focus); }
+.scan button:disabled { opacity: .5; cursor: not-allowed; }
+.scan .primary { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 600; }
+.scan .ico { min-height: 32px; padding: 0; border-color: transparent; }
+
+.scan .status { margin: 6px 14px 0; padding: 0; }
+
+/* 结果列表是唯一会长的部分，滚动条留在它身上，头和脚不动 */
+.scan__list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 6px 0 0;
+  padding: 0 14px;
+  list-style: none;
+}
+
+.hit {
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+}
+
+.scan__list .hit:first-child { border-top: none; }
+
+.hit__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* 端口号等宽对齐，扫出一串来时竖着能扫一眼 */
+.hit__port {
+  flex: 0 0 auto;
+  min-width: 46px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.hit__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+/* 链接和描述跟在名称下面，和导航页卡片一个排法：一行到底，超出省略号 */
+.hit__url, .hit__tag {
+  display: block;
+  padding-left: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hit__url { color: var(--accent); text-decoration: none; }
+.hit__url:hover { text-decoration: underline; }
+.hit__url:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 4px; }
+.hit__tag:empty { display: none; }
+
+.scan__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.scan__tip { margin-right: auto; color: var(--muted); font-size: 12px; }
+
+@media (max-width: 900px) {
+  .scan__bar { flex-wrap: wrap; }
+  #scan-host { flex: 1; width: auto; }
+  .scan__foot { flex-wrap: wrap; }
+  .scan__tip { width: 100%; margin-right: 0; }
+}
+
+/* 「会存成 :端口」那句提示：只在扫的是本机时由 JS 放出来 */
+#scan-rel { display: block; color: var(--accent); font-weight: 400; }
+#scan-rel code { font-family: var(--font-mono); }
+
+/* —— 节点（查找节点那一块，见 peer.js）—— */
+.peer { margin-top: 4px; }
+.peer__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.peer__bar .add { width: auto; margin-top: 0; }   /* .add 默认是侧边栏里的整行按钮，这里是并排的两个 */
+.peer__bar .status { padding-left: 4px; }
+.peer__list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.peer__list li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.peer__list .peer__name { font-weight: 600; }
+.peer__list .peer__note { color: var(--muted); }
+
+/* —— 网站图标面板 ——
+   一段一个设置：开关在上，抓取在下，列表兜底。说明文字常驻在控件下面，不藏进 placeholder 或悬停提示。 */
+.opt { padding: 4px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.opt__title { margin: 0 0 4px; font-size: 14px; }
+.opt__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.opt__bar .status { padding-left: 4px; }
+
+/* 开关：原生 checkbox 画成拨动开关，键盘、读屏、点文字切换都是原生的。 */
+.switch { display: inline-flex; align-items: center; gap: 10px; min-height: 32px; cursor: pointer; font-weight: 600; }
+.switch input {
+  appearance: none;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--line);
+  position: relative;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .25);
+  transition: transform .15s ease;
+}
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(16px); }
+.switch input:focus-visible { outline: none; box-shadow: var(--focus); }
+@media (prefers-reduced-motion: reduce) { .switch input, .switch input::after { transition: none; } }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 600; }
+[data-theme="dark"] .btn.primary { color: #0b1220; }
+.btn[aria-busy] .i { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn[aria-busy] .i { animation: none; } }
+
+/* 每个网站一行：图标 · 名称 · 地址 · 状态。地址太长用省略号，完整的就在旁边的书签里。 */
+.sites { list-style: none; margin: 0; padding: 0; }
+.site {
+  display: grid;
+  grid-template-columns: 20px minmax(6em, auto) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.site:last-child { border-bottom: none; }
+.site__img { width: 20px; height: 20px; object-fit: contain; }
+.site__globe { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.site__name { font-weight: 600; }
+.site__url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.site__state { color: var(--muted); }
+.site[data-state="ok"] .site__state { color: var(--ok); }
+.site[data-state="bad"] .site__state { color: var(--bad); }
+.site__why { grid-column: 2 / -1; color: var(--bad); font-size: 12px; overflow-wrap: anywhere; }
+.site__why:empty { display: none; }
+.site--empty { display: block; color: var(--muted); }
+
+@media (max-width: 600px) {
+  .site { grid-template-columns: 20px 1fr auto; }
+  .site__url { grid-column: 2 / -1; }
+}
+
+/* ——— 窄屏 ———
+   和导航页同一个断点。侧边栏里除了分组还有两个设置面板、两个按钮和返回链接，
+   竖着排要占掉大半屏，所以全部摊成可换行的小块。
+   #nav 用 display: contents 让分组链接直接参与 .side 的换行，DOM 不动 ——
+   admin.js 的 syncNav 按 #nav 的子节点和分组下标配对，面板链接不能搬进去。 */
+@media (max-width: 720px) {
+  .side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .side__brand { width: 100%; padding-bottom: 2px; }
+  #nav { display: contents; }
+  .side .add { width: auto; margin-top: 0; }   /* 只收侧边栏里的两个，分组底下的「新增书签」仍然整行 */
+  .side__back { margin: 0; }
+
+  /* 顶栏按用途排成三行：标题 + 主题切换 / 打开方式 / 状态 + 放弃 + 保存。
+     放弃和保存并排放在最后一行，状态文字就在它们左边，和桌面上的位置关系一致。 */
+  .top { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 8px; }
+  .f-title-wrap:has(#title) { grid-column: 1 / 3; grid-row: 1; }
+  .f-title-wrap input { flex: 1; width: auto; }
+  #theme { grid-column: 3; grid-row: 1; justify-self: end; }   /* 第三列的宽度由保存按钮决定，它别跟着拉宽 */
+  .f-title-wrap:has(#open) { grid-column: 1 / -1; grid-row: 2; }
+  .status { grid-column: 1; grid-row: 3; width: auto; margin: 0; padding-left: 0; }
+  #revert { grid-column: 2; grid-row: 3; }
+  #save { grid-column: 3; grid-row: 3; }
+  .top button { white-space: nowrap; }
+}
+
+/* ——— 触屏 ———
+   跟导航页同一个思路：鼠标用紧凑的那一档，手指点的设备统一放大到 44px。 */
+@media (pointer: coarse) {
+  main input[type="text"], main input:not([type]), main input[type="url"], main select,
+  .top select, .top input, .top button, main textarea,
+  .scan input[type="text"], .scan input:not([type]), .scan button, .add, .btn, .switch { min-height: 44px; }
+  .ico { width: 44px; height: 44px; }
+  .row { padding: 4px; }
+  .hit { padding: 8px 0; }
+}

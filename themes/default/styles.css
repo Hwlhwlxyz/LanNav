@@ -1,0 +1,349 @@
+/* 主题的全部外观都在这个文件里。换主题 = 复制 themes/default 改这里。 */
+
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --side: #ffffff;
+  --text: #1c1f23;
+  --muted: #5f6772;      /* 对白底 5.7:1，正文级对比度 */
+  --line: #e3e6ea;
+  --accent: #2563eb;
+  --accent-soft: #eef3ff;    /* 悬停底色 */
+  --accent-soft-2: #dfe8ff;  /* 选中底色：比悬停深一档，「当前在哪」不靠加粗也看得出 */
+  /* 圆角只有三档：卡片/侧边栏/搜索框 10，按钮/输入框 8，kbd 这类小件 6。嵌套时内 = 外 − 内边距。 */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  /* 西文字体写在中文字体前面，否则中文字体自带的英文字形会盖掉系统西文。 */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  color-scheme: light;   /* 让搜索框清除键、滚动条跟随主题 */
+}
+
+/* 深色用纯中性灰，不偏蓝：灰底越「干净」，强调色的蓝越突出。 */
+[data-theme="dark"] {
+  --bg: #161616;
+  --panel: #1f1f1f;
+  --side: #1a1a1a;
+  --text: #e6e6e6;
+  --muted: #9c9c9c;      /* 对 --panel 6.3:1 */
+  --line: #2b2b2b;
+  --accent: #6ea0ff;
+  --accent-soft: #222a3a;
+  --accent-soft-2: #2a3650;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+/* .card 设了 display:flex，会盖掉浏览器对 hidden 属性的默认样式，
+   所以搜索过滤要靠这一条才真正生效。 */
+[hidden] { display: none !important; }
+
+/* 顶栏高度：搜索框 36 + 上下各 6 + 1px 底线。分组标题贴在它下面，滚到分组时也以它为准。
+   触屏下搜索框放大到 44，这个值在文件后面跟着改。 */
+:root { --top-h: 49px; }
+
+/* 顶栏是 sticky 的，滚到分组、键盘 Tab 到卡片时都不能被它挡住（WCAG 2.2 焦点不被遮挡）。 */
+html { scroll-padding-top: var(--top-h); }
+
+body {
+  margin: 0;
+  display: flex;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 var(--font-sans);
+  accent-color: var(--accent);   /* 复选框、下拉、原生控件跟站内同一个蓝，不用浏览器默认那个 */
+}
+
+/* 键盘焦点统一一条规则：双层 ring，浅色深色下都看得见。
+   :focus-visible 保证鼠标点击不会留下残影。 */
+.side__brand a:focus-visible,
+.side__link:focus-visible,
+.card:focus-visible,
+#theme:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ——— 左侧分组栏 ——— */
+.side {
+  flex: 0 0 184px;
+  align-self: flex-start;        /* 不拉满高度，sticky 才生效 */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  padding: 12px 8px;
+}
+
+/* 站名是页面的 h1，也是回到首页的链接；外观和普通文字一样，不加下划线。 */
+.side__brand {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 10px 8px;
+}
+
+.side__brand a { color: inherit; text-decoration: none; border-radius: var(--radius-xs); }
+
+/* 鼠标用 36px 够了；触屏在文件后面统一放大到 44px。
+   整行都是链接，图标和文字之间的空白也点得中。 */
+.side__link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  margin-bottom: 0;
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.side__link:hover { background: var(--accent-soft); }
+
+/* 当前分组：底色深一档加粗体，文字不变色 —— 蓝色留给悬停边框和主按钮。 */
+.side__link[aria-current="page"] {
+  background: var(--accent-soft-2);
+  font-weight: 600;
+}
+
+.side__icon { font-size: 16px; }
+
+/* ——— 右侧内容 ——— */
+.content { flex: 1; min-width: 0; }
+
+/* 顶栏常驻：搜索框在任何滚动位置都伸手可及。 */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.search { position: relative; display: flex; flex: 1; max-width: 420px; }
+
+#search {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+#search:focus { outline: none; box-shadow: var(--focus); border-color: var(--accent); }
+
+.clock { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+#theme {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+#theme:hover { border-color: var(--accent); color: var(--accent); }
+
+main { padding: 12px 16px; }
+
+/* ——— 分组 ———
+   所有分组从上到下排在同一页里，点侧边栏滚过去，滚动时侧边栏跟着亮（见 app.js）。
+   搜索时（body[data-searching]）没有命中项的分组整组收起。 */
+.group + .group { margin-top: 16px; }
+body[data-searching] .group:not(:has(.card:not([hidden]))) { display: none; }
+
+/* 分组标题贴在顶栏下面：往下滚时始终知道自己在哪一组。
+   底色和页面一样，盖住从下面滚上来的卡片。
+   分组名原样显示：不转大写，「iOS」就是「iOS」。层级靠小一号、灰一点来区分。 */
+.group__title {
+  position: sticky;
+  top: var(--top-h);
+  z-index: 5;
+  margin: 0;
+  padding: 6px 0;
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* 键盘 Tab 到卡片时，除了顶栏还要让开贴着的分组标题 */
+.card { scroll-margin-top: 30px; }
+
+/* ——— 卡片 ———
+   整张卡片就是一个链接，点哪都算。卡片窄一点、间距小一点，一屏放得下更多；
+   名称和描述都只占一行，卡片高度整齐，扫一眼就能对上位置。
+   鼠标操作间隔 6px 够用；触屏在后面拉开到 10px，免得手指点到隔壁。 */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 6px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  touch-action: manipulation;    /* 去掉移动端点击前的等待，点了立刻跳 */
+  transition: border-color .12s ease, background-color .12s ease, transform .08s ease;
+}
+
+/* 悬停：边框和底色一起变，不靠位移 —— 位移会让指针底下的目标跟着跑。
+   按下：轻轻缩一下，确认「点到了」；transform 不影响布局，周围的卡片不动。 */
+.card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.card:active { transform: scale(.98); }
+
+/* 搜索时第一条命中项描上强调色边：回车打开的就是它，按之前先看得见。 */
+.card[data-first] { border-color: var(--accent); }
+
+.card__icon { flex: none; width: 24px; text-align: center; font-size: 20px; line-height: 1; }
+.sprite { display: none; }   /* 只放 <symbol>，卡片用 <use> 引 */
+.card__icon--img { height: 24px; object-fit: contain; }
+.card__icon--svg { height: 22px; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; }
+.card__text { min-width: 0; }
+
+/* 名称和描述放不下都用省略号收尾；完整文字挂在整张卡片的 title 上（见模板）。 */
+/* 标题加粗：Windows 上 500 和 400 几乎没区别，标题会和描述糊在一起，600 才能一眼分出来。 */
+.card__title {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__desc {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ——— 空状态 ——— */
+/* 文案由 JS 写入，写空就自动收起，不需要 :has() 反查。 */
+.empty { color: var(--muted); padding: 16px 2px; }
+.empty:empty { display: none; }
+
+/* ——— 移动端：分组栏变成顶部横向条 ——— */
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  .side {
+    position: static;
+    align-self: stretch;           /* 竖排时铺满整行宽，不然底色只到内容那么宽 */
+    flex: none;
+    height: auto;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+  }
+  .side__brand { padding-bottom: 8px; }
+  /* 横向滚动条会裁掉外发光焦点环，所以焦点用内描边。
+     滚动条收成细的：Windows 默认那条有 17px 高，比分组条本身还抢眼。 */
+  .side nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+  .side__link:focus-visible { box-shadow: none; outline: 2px solid var(--accent); outline-offset: -2px; }
+  .side__link { flex: none; }   /* 横向条里不换行、不被压扁 */
+  .top { padding: 6px 12px; }
+  .search { max-width: none; min-width: 0; }   /* 按钮占位后，搜索框吃掉剩下的 */
+  .clock { display: none; }     /* 窄屏上时钟会从搜索框那里抢走 70px，手机状态栏本来就有时间 */
+  main { padding: 10px; }
+  /* 窄屏一行两张：单列太浪费地方，三列名称就只剩两三个字 */
+  .cards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+
+/* ——— 触屏 ———
+   手指比鼠标粗：能点的东西统一放大到 44px，卡片之间再拉开一点，免得点到隔壁。
+   按指针类型判断而不是按屏幕宽度：平板横屏也是手指在点。 */
+@media (pointer: coarse) {
+  :root { --top-h: 57px; }   /* 搜索框 44 + 上下各 6 + 1px 底线 */
+  .side__link, #search, .svc__refresh { min-height: 44px; }
+  #theme { min-width: 44px; min-height: 44px; }
+  .card { min-height: 52px; }
+  .cards { gap: 10px; }
+}
+
+/* ——— 降低动效 ———
+   用户在系统里关掉动画时，悬停位移和过渡一并取消，状态变化仍然可见。 */
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .card:active { transform: none; }
+}
+
+/* ——— 发现的服务 ———
+   和普通分组同一套卡片，只多一行：标题、上次扫描的时间、刷新按钮。 */
+/* 跟上面的书签分组隔开一点：它不是 data.json 里的分组，内容是扫出来的。 */
+.side__link--svc { margin-top: 8px; }
+@media (max-width: 720px) { .side__link--svc { margin-top: 0; } }
+
+.svc__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+}
+
+/* 这一组的标题和扫描信息、刷新按钮在一行里，所以贴顶的是整行，标题自己不再 sticky */
+.svc__head {
+  position: sticky;
+  top: var(--top-h);
+  z-index: 5;
+  padding: 6px 0;
+  background: var(--bg);
+}
+.svc__head .group__title { position: static; padding: 0; }
+.svc__meta { margin: 0; color: var(--muted); font-size: 12px; }
+
+.svc__refresh {
+  min-height: 32px;
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.svc__refresh:hover { border-color: var(--accent); color: var(--accent); }
+.svc__refresh:focus-visible { outline: none; box-shadow: var(--focus); }
+.svc__refresh:disabled { opacity: .5; cursor: progress; }
+
+.svc__note { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
+
+/* 搜索时只放出卡片，刷新这一行没意义 */
+body[data-searching] .svc__meta,
+body[data-searching] .svc__refresh,
+body[data-searching] .svc__note { display: none; }
+
+/* 分组里一条可见的书签都没有时，给句话，别让人对着一片空白猜是不是坏了 */
+.group__empty { margin: 0; padding: 16px 2px; color: var(--muted); }

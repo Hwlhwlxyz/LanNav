@@ -1,0 +1,7 @@
+# 编辑页保存时在 data/ 下留下的备份与临时文件
+*.bak
+*.tmp
+
+# 构建产物（go build -o nav / nav.exe）
+/nav
+*.exe

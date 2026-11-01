@@ -1,0 +1,258 @@
+{{- /* 一行书签的结构只写这一处：下面 range 出来的已有行、和 <template> 里那行空白行，
+     都从这里生成。避免模板和 JS 各写一份、改一处漏一处。 */ -}}
+{{define "row"}}
+<li class="row">
+  <input class="f-icon" value="{{ .Icon }}" aria-label="图标" placeholder="🔗" maxlength="8">
+  <input class="f-name" value="{{ .Name }}" aria-label="名称" placeholder="名称" required>
+  {{- /* 不能用 type="url"：它不收 ":8080/path" 这种跟着当前地址走的写法。
+       换成 pattern，顺带仍然放行 mailto: ssh: 这些本来就能填的。
+       字符类里的连字符必须写成 - ：pattern 是按 v 标志编译的，裸的 - 是语法错误，
+       而编译失败浏览器会整条忽略掉这个属性 —— 校验就悄悄失效了，还不报错。 */ -}}
+  <input class="f-url" type="text" inputmode="url" value="{{ .URL }}" aria-label="链接"
+         placeholder="https://… 或 :8080/path" required
+         pattern="[a-zA-Z][a-zA-Z0-9+.\-]*:.+|:\d{1,5}(/.*)?|/.*"
+         title="完整地址（https://…），或者 :8080/path —— 冒号开头的跟着你当前访问的地址走">
+  <input class="f-desc" value="{{ .Description }}" aria-label="描述" placeholder="描述（可选）">
+  {{- /* 空值 = 跟随顶栏的全站设置。只有在这条想跟大家不一样时才需要动它。 */}}
+  <select class="f-open" aria-label="打开方式">
+    <option value="">跟随默认</option>
+    <option value="tab"{{ if eq .Open "tab" }} selected{{ end }}>新标签页</option>
+    <option value="self"{{ if eq .Open "self" }} selected{{ end }}>当前页</option>
+  </select>
+  <label class="f-hide"><input type="checkbox" class="f-hidden"{{ if .Hidden }} checked{{ end }}> 隐藏</label>
+  <span class="ops">
+    <button class="ico move" type="button" data-dir="-1" aria-label="上移"><svg class="i"><use href="#i-up"/></svg></button>
+    <button class="ico move" type="button" data-dir="1" aria-label="下移"><svg class="i"><use href="#i-down"/></svg></button>
+    <button class="ico del" type="button" aria-label="删除这条书签"><svg class="i"><use href="#i-del"/></svg></button>
+  </span>
+</li>
+{{end -}}
+
+{{define "group"}}
+<section class="ed-group" data-group="{{ .ID }}">
+  <div class="ghead">
+    <input class="f-gicon" value="{{ .Icon }}" aria-label="分组图标" placeholder="📁" maxlength="8">
+    <input class="f-gname" value="{{ .Name }}" aria-label="分组名称" placeholder="分组名称" required>
+    <label class="f-gid-wrap">id
+      <input class="f-gid" value="{{ .ID }}" aria-label="分组 id" placeholder="dev"
+             pattern="[A-Za-z0-9_\-]+" title="只能用字母、数字、连字符和下划线，它会出现在网址里" required>
+    </label>
+    <label class="f-hide"><input type="checkbox" class="f-ghidden"{{ if .Hidden }} checked{{ end }}> 隐藏整组</label>
+    <span class="ops">
+      <button class="ico gmove" type="button" data-dir="-1" aria-label="分组上移"><svg class="i"><use href="#i-up"/></svg></button>
+      <button class="ico gmove" type="button" data-dir="1" aria-label="分组下移"><svg class="i"><use href="#i-down"/></svg></button>
+      <button class="ico gdel" type="button" aria-label="删除整个分组"><svg class="i"><use href="#i-del"/></svg></button>
+    </span>
+  </div>
+  <ol class="rows">
+    {{- range .Items }}{{ template "row" . }}{{ end }}
+  </ol>
+  <button class="add add-item" type="button"><svg class="i"><use href="#i-add"/></svg>新增书签</button>
+</section>
+{{end -}}
+
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ .Title }} · 编辑</title>
+<script>
+(() => {
+  let t = null
+  try { t = localStorage.getItem("theme") } catch { /* 隐私模式下忽略 */ }
+  document.documentElement.dataset.theme =
+    t ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+})()
+</script>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/admin.css">
+</head>
+<body data-stamp="{{ .Stamp }}">
+{{- /* 默认端口写在这里而不是 Go 里：它属于「这套界面的默认值」，换主题就该能改。
+     扫描对话框和「发现的服务」的设置共用这一份。 */}}
+{{- /* 6565-9090 一整段：自建服务的端口大多落在这里，7000、8000、8080、8888、9000、9090 这些都已包含在内。
+     段外单列的是常见的数据库、消息队列、开发脚手架和运维工具的默认端口。共 2553 个，在单个地址 4000 的上限以内。 */}}
+{{- $ports := "22,80,443,1158,1433,1521,2100,2181,2375,2376,3000,3306,4200,5000,5173,5432,5672,6379,6565-9090,9092,9200,9300,11211,15672,27017,27018,32400,61616" }}
+
+<!-- 图标只定义一次，按钮用 <use> 引；克隆出来的新行也引得到。 -->
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-del" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+</svg>
+
+<aside class="side">
+  <h1 class="side__brand">编辑书签</h1>
+  <nav id="nav" aria-label="分组">
+    {{- range .Groups }}
+    <a class="side__link" href="#" data-group="{{ .ID }}"><span class="side__icon">{{ .Icon }}</span><span class="nav-name">{{ .Name }}</span><span class="nav-count"></span></a>
+    {{- end }}
+  </nav>
+  <!-- 不在 #nav 里：#nav 的入口和分组按下标一一配对，这一项不是分组。 -->
+  <a id="svc-open" class="side__link side__link--svc panel-link" href="#" data-group="services"><span class="side__icon">📡</span><span class="nav-name">发现的服务</span></a>
+  <a class="side__link panel-link" href="#" data-group="@icons"><span class="side__icon">🌐</span><span class="nav-name">网站图标</span></a>
+  <button id="add-group" class="add" type="button"><svg class="i"><use href="#i-add"/></svg>新增分组</button>
+  <button id="scan-open" class="add" type="button"><svg class="i"><use href="#i-scan"/></svg>扫描服务</button>
+  <a class="side__back" href="/">← 回到导航页</a>
+</aside>
+
+<div class="content">
+  <header class="top">
+    <label class="f-title-wrap">站点标题
+      <input id="title" value="{{ .Title }}" aria-label="站点标题" required>
+    </label>
+    <label class="f-title-wrap">链接打开方式
+      <select id="open" aria-label="链接打开方式（全站默认）">
+        <option value="tab">新标签页</option>
+        <option value="self"{{ if eq .Open "self" }} selected{{ end }}>当前页</option>
+      </select>
+    </label>
+    <p id="status" class="status" role="status"></p>
+    <button id="revert" type="button" title="Esc" aria-keyshortcuts="Escape">放弃改动</button>
+    <button id="save" class="primary" type="button" title="Ctrl+S" aria-keyshortcuts="Control+S Meta+S">保存到 JSON</button>
+    <button id="theme" type="button" aria-label="切换深浅色">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </header>
+
+  <main>
+    {{- range .Groups }}{{ template "group" . }}{{ end }}
+
+    <!-- 导航页「发现的服务」的设置。跟书签一起存进 data.json，一起点「保存到 JSON」。
+         data-group 用的就是导航页上那一栏的 id，服务端不许普通分组占用它，不会撞。 -->
+    <section id="svc-panel" class="ed-panel" data-group="services">
+      <div class="ghead"><h2 class="panel__title"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg>发现的服务</h2></div>
+      <p class="panel__tip">导航页左侧会多出「发现的服务」一栏：扫下面这些地址，开着的网页服务直接列成卡片。
+        结果只存在服务端内存里，不会自己刷新 —— 在导航页那一栏点「刷新」才重扫。地址留空就不显示那一栏。</p>
+      <label class="panel__field">要扫的地址 <span class="panel__hint">一行一个，IP 或主机名，最多 16 个</span>
+        <textarea id="svc-hosts" rows="5" spellcheck="false" placeholder="{{ .LocalIP }}">
+{{ range .Scan.Hosts }}{{ . }}
+{{ end }}</textarea>
+      </label>
+      <label class="panel__field">端口 <span class="panel__hint">80,443 或 8000-8100，每个地址最多 4000 个；地址数 × 端口数最多 20000</span>
+        <input id="svc-ports" autocomplete="off" spellcheck="false" value="{{ with .Scan.Ports }}{{ . }}{{ else }}{{ $ports }}{{ end }}">
+      </label>
+
+      <!-- 节点：找同网段里也跑着这个导航页的机器，加进上面的地址里。加进去的节点不扫，直接问它要端口。
+           服务端在 internal/peer，行为在 peer.js，样式在 admin.css 末尾那一节。不想要了这几处一起删。 -->
+      <div class="peer">
+        <div class="peer__bar">
+          <button id="peer-find" class="add" type="button">查找节点</button>
+          <button id="peer-sweep" class="add" type="button" title="广播找不到时用：把本机所在网段的每个 IP 都问一遍，要十几秒">逐个询问网段</button>
+          <span id="peer-status" class="status" role="status"></span>
+        </div>
+        <ul id="peer-list" class="peer__list"></ul>
+      </div>
+    </section>
+
+    <!-- 网站图标的设置。开关跟着「保存到 JSON」走；抓取是单独的动作，只改 icons/ 目录，不碰 data.json。
+         data-group 带 @：分组 id 里不允许这个字符，不会和哪个分组撞上。 -->
+    <section id="icons-panel" class="ed-panel" data-group="@icons">
+      <div class="ghead"><h2 class="panel__title"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg>网站图标</h2></div>
+
+      <div class="opt">
+        <label class="switch">
+          <input type="checkbox" id="favicons" role="switch"{{ if .Favicons }} checked{{ end }}>
+          <span class="switch__label">在导航页显示网站图标</span>
+        </label>
+        <p class="panel__tip">关着时卡片显示你给每条书签填的 emoji。打开后统一显示网站图标：
+          下面抓到了的用网站自己的，没抓到的显示一个地球。改完要点右上角「保存到 JSON」。</p>
+      </div>
+
+      <div class="opt">
+        <h3 class="opt__title">抓取图标</h3>
+        <p class="panel__tip">由这台服务器把每个网站的图标下载一次，存在 data.json 旁边的 icons/ 目录里。
+          之后打开导航页的人只从这里读图标，不会再访问这些网站，也不经过任何第三方图标服务。
+          只抓已保存的书签；书签删掉了，它的图标下次抓取时一并清掉。</p>
+        <div class="opt__bar">
+          <button id="icons-fetch" class="btn primary" type="button" aria-describedby="icons-status">
+            <svg class="i"><use href="#i-globe"/></svg><span class="btn__text">抓取全部图标</span>
+          </button>
+          {{- /* 进来先告诉一声现状，不用点就知道还差几个 */}}
+          <span id="icons-status" class="status" role="status">
+            {{- with .Icons }}{{ $n := 0 }}{{ range . }}{{ if .Src }}{{ $n = inc $n }}{{ end }}{{ end }}已抓取 {{ $n }} / {{ len . }} 个网站{{ end -}}
+          </span>
+        </div>
+      </div>
+
+      {{- /* 每个网站一行。已有的由模板渲染，抓完由 admin.js 按接口返回整张换掉，行结构都在 #site-tpl。 */}}
+      <ul id="icons-list" class="sites" aria-label="各网站的图标">
+        {{- range .Icons }}
+        <li class="site" data-state="{{ if .Src }}ok{{ else }}none{{ end }}">
+          {{- if .Src }}<img class="site__img" src="{{ .Src }}" alt="" width="20" height="20">
+          {{- else }}<svg class="site__img site__globe" aria-hidden="true"><use href="#i-globe"/></svg>{{ end }}
+          <span class="site__name">{{ .Name }}</span>
+          <span class="site__url">{{ .URL }}</span>
+          <span class="site__state">{{ if .Src }}已抓取{{ else }}还没抓{{ end }}</span>
+        </li>
+        {{- else }}
+        <li class="site site--empty">还没有能取图标的书签（只认 http/https 地址和 :端口 写法）。</li>
+        {{- end }}
+      </ul>
+    </section>
+  </main>
+</div>
+
+<!-- 空白行 / 空白分组：跟上面的已有条目共用同一段 define，结构不会走样。 -->
+<template id="row-tpl"><ol>{{ template "row" newItem }}</ol></template>
+<template id="group-tpl">{{ template "group" newGroup }}</template>
+<template id="site-tpl">
+  <li class="site">
+    <img class="site__img" alt="" width="20" height="20">
+    <svg class="site__img site__globe" aria-hidden="true"><use href="#i-globe"/></svg>
+    <span class="site__name"></span>
+    <span class="site__url"></span>
+    <span class="site__state"></span>
+    <span class="site__why"></span>
+  </li>
+</template>
+<template id="nav-tpl"><a class="side__link" href="#" data-group=""><span class="side__icon"></span><span class="nav-name"></span><span class="nav-count"></span></a></template>
+
+<!-- 扫描一个地址上开着的服务，勾中的直接变成当前分组里的书签行。
+     用原生 <dialog>：焦点圈住、Esc 关闭、背景遮罩都是白送的。 -->
+<dialog id="scan-dlg" class="scan" aria-labelledby="scan-title">
+  <header class="scan__head">
+    <h2 id="scan-title">扫描服务</h2>
+    <button id="scan-close" class="ico" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+  </header>
+
+  <div class="scan__bar">
+    <label>地址 <input id="scan-host" placeholder="{{ .LocalIP }}" autocomplete="off" spellcheck="false"></label>
+    <label class="scan__ports">端口 <input id="scan-ports" autocomplete="off" spellcheck="false" value="{{ $ports }}"></label>
+    <button id="scan-go" class="primary" type="button">开始扫描</button>
+  </div>
+
+  <p id="scan-status" class="status" role="status"></p>
+  <ol id="scan-list" class="scan__list"></ol>
+
+  <footer class="scan__foot">
+    <span class="scan__tip">勾中的会加到当前分组，保存后才写进 data.json。<b id="scan-rel" hidden>扫的是本机，会存成 <code>:端口</code>，跟着你访问导航页的地址走。</b></span>
+    <button id="scan-add" class="primary" type="button">加入当前分组</button>
+  </footer>
+</dialog>
+
+<!-- 一条扫描结果。和上面那些 template 一个路子：结构写在 HTML 里，JS 只填值。 -->
+<template id="scan-tpl">
+  <li class="hit">
+    <label class="hit__main">
+      <input type="checkbox" class="hit__on">
+      <span class="hit__port"></span>
+      <span class="hit__name"></span>
+    </label>
+    <a class="hit__url" target="_blank" rel="noopener noreferrer"></a>
+    <span class="hit__tag"></span>
+  </li>
+</template>
+
+<script src="/static/admin.js"></script>
+<script src="/static/peer.js"></script>
+</body>
+</html>
